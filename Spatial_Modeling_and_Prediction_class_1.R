@@ -116,13 +116,8 @@ save_plot("plot2by2.png", p1p2,
           base_aspect_ratio = 1.3
 )
 
-
-
-
-
 library(rgdal)
 library(raster)
-
 
 occ <- readOGR("C:/Users/JELG02/Documents/R_Repository/Spatial_Modeling_and_Prediction/occurence.gpkg")
 
