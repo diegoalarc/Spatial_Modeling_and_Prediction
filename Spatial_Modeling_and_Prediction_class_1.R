@@ -1,10 +1,10 @@
 # height vs. weight pred
 
-hw <- read.csv("C:/Users/JELG02/Documents/R_Repository/Spatial_Modeling_and_Prediction/weight-height.csv")
+hw <- read.csv("/home/diego/Desktop/2do_Semestre/Spatial_Modeling_and_Prediction_(04-GEO-MET1)/weight-height.csv")
 head(hw)
 summary(hw)
 
-install.packages("measurements")
+#install.packages("measurements", dependencies = T)
 library(measurements)
 hw2<- data.frame(Gender=hw$Gender, Weight=conv_unit(hw$Weight,"lbs","kg"), Height=conv_unit(hw$Height,"inch","cm"))
 
@@ -87,6 +87,7 @@ matplot(hw.new$Height, cbind(pred.hw.c, pred.hw.p[,-1]),
 # ggplot2
 
 library(ggplot2)
+#install.packages("cowplot", dependencies = T)
 library(cowplot)
 
 
@@ -119,13 +120,13 @@ save_plot("plot2by2.png", p1p2,
 library(rgdal)
 library(raster)
 
-occ <- readOGR("C:/Users/JELG02/Documents/R_Repository/Spatial_Modeling_and_Prediction/occurence.gpkg")
+occ <- readOGR("/home/diego/Desktop/2do_Semestre/Spatial_Modeling_and_Prediction_(04-GEO-MET1)/occurence.gpkg")
 
 class(occ)
 summary(occ)
 plot(occ)
 
-bui <- readOGR("C:/Users/JELG02/Documents/R_Repository/Spatial_Modeling_and_Prediction/campus_buildings.gpkg")
+bui <- readOGR("/home/diego/Desktop/2do_Semestre/Spatial_Modeling_and_Prediction_(04-GEO-MET1)/campus_buildings.gpkg")
 
 plot(bui)
 
@@ -141,7 +142,7 @@ rr.0.d <-  distance(rr.0)
 preds <- rr.0.d
 plot(rr.0.d)
 
-#install.packages("sdm")
+#install.packages("sdm", dependencies = T)
 library(sdm)
 
 d <- sdmData(formula = students~layer, train = occ, predictors = preds)
