@@ -127,7 +127,8 @@ predictors_may <- re3_may
 # Regroup the raster which has passed the Multicollinearity test in one stack
 predictors <- stack(re3_march, re3_april, re3_may)
 
-# Remove the repeated layer bathymetry that was used in the Multicollinearity test
+# Remove the repeated layer bathymetry that it was used in the Multicollinearity 
+#test before
 predictors <- dropLayer(predictors,c(14,21))
 
 # Masked the inland area
