@@ -9,239 +9,359 @@ library(dismo)
 library(rJava)
 library(ggplot2)
 library(sf)
+library(sp)
 library(sdm)
 library(usdm)
+library(mapview)
 
-setwd('/home/diego/GITHUP_REPO/Spatial_Modeling_and_Prediction')
+#setwd('/home/diego/GITHUP_REPO/Spatial_Modeling_and_Prediction/')
 
 # Set the projection that will be use in this project
 r <- CRS("+proj=longlat +datum=WGS84")
 p <- "+proj=longlat +datum=WGS84"
 
 # Get the borders of Chile using GADM data
-Chile <- getData("GADM", country="Chile", level=0)
+#Chile <- getData("GADM", country="Chile", level=0)
 
 # Re-projection of Chile borders
-Chile <- spTransform(x = Chile, CRSobj = r)
+#Chile <- spTransform(x = Chile, CRSobj = r)
 
 # Penguins data in Shapefile format
-h_penguins <- readOGR('/shape_PTT/HumboldtPenguins_Punihuil_PTT.shp')
+h_penguins_2009 <- readOGR('shape_PTT/HumboldtPenguins_Punihuil_PTT.shp')
 
 # Re-projection of the Penguins data in Shapefile
-h_penguins <- spTransform(x = h_penguins, CRSobj = r)
+h_penguins_2009 <- spTransform(x = h_penguins_2009, CRSobj = r)
+
+# Add a new column namely Penguins
+h_penguins_2009$species <- 1
 
 # The spatial data of the penguins is split in the different month we will test
-h_penguins_march <- h_penguins[h_penguins$March == '1',]
-h_penguins_april <- h_penguins[h_penguins$April == '1',]
-h_penguins_may <- h_penguins[h_penguins$May == '1',]
+# Remove the data without coodinate
+h_penguins_march_2009 <- h_penguins_2009[h_penguins_2009$March == '1',]
+h_penguins_march_2009 <- h_penguins_march_2009[,c('species')]
+head(h_penguins_march_2009)
+
+h_penguins_april_2009 <- h_penguins_2009[h_penguins_2009$April == '1',]
+h_penguins_april_2009 <- h_penguins_april_2009[,c('species')]
+head(h_penguins_april_2009)
+
+h_penguins_may_2009 <- h_penguins_2009[h_penguins_2009$May == '1',]
+h_penguins_may_2009 <- h_penguins_may_2009[,c('species')]
+head(h_penguins_may_2009)
 
 # The data is bind in a total data container
-h_penguins <- bind(h_penguins_march, h_penguins_april, h_penguins_may)
-
-# Penguins data in CSV format
-#h_penguins_csv <- read.csv('/home/diego/Desktop/2do_Semestre/Spatial_Modeling_and_Prediction_(04-GEO-MET1)/Humbolt_Penguins/HumboldtPenguins_Punihuil_PTT.csv')
+h_penguins_2009 <- bind(h_penguins_march_2009, h_penguins_april_2009, h_penguins_may_2009)
+head(h_penguins_2009)
+mapview(h_penguins_2009)
 
 # The next lines it will call four list of raster data
-bathymetry <- stack('/Raster_data_PTT/bathymetry.tif')
+bathymetry <- raster('Raster_data_PTT/bathymetry.tif')
 names(bathymetry) <- c('bathymetry')
 
-march <- list.files('/Raster_data_PTT',
-                              full.names = TRUE,
-                              pattern = "March_2009.tif$")
+march_2009 <- list.files('Raster_data_PTT',
+                    full.names = TRUE,
+                    pattern = "March_2009.tif$")
 
-april <- list.files('/Raster_data_PTT',
+april_2009 <- list.files('Raster_data_PTT',
                     full.names = TRUE,
                     pattern = "April_2009.tif$")
 
-may <- list.files('/Raster_data_PTT',
+may_2009 <- list.files('Raster_data_PTT',
                     full.names = TRUE,
                     pattern = "May_2009.tif$")
 
-march <- stack(march,bathymetry)
-march <- projectRaster(march, crs=p)
+### Data preparation to apply the Multicollinearity test by month
+march_2009 <- stack(march_2009,bathymetry)
+march_2009 <- projectRaster(march_2009, crs=p)
+
+april_2009 <- stack(april_2009,bathymetry)
+april_2009 <- projectRaster(april_2009, crs=p)
+
+may_2009 <- stack(may_2009,bathymetry)
+may_2009 <- projectRaster(may_2009, crs=p)
+
+# Make the projection of the Bathymetry same as the others
+bathymetry <- projectRaster(bathymetry, crs=p)
+
+### Mean of three months data
+
+Chlorophyll.a_2009 <- stack(march_2009[[1]], april_2009[[1]], may_2009[[1]])
+Chlorophyll.a_2009 <- calc(Chlorophyll.a_2009, fun = mean)
+
+Elevation_2009 <- stack(march_2009[[2]], april_2009[[2]], may_2009[[2]])
+Elevation_2009 <- calc(Elevation_2009, fun = mean)
+
+Salinity_2009 <- stack(march_2009[[3]], april_2009[[3]], may_2009[[3]])
+Salinity_2009 <- calc(Salinity_2009, fun = mean)
+
+Sea_Surface_2009 <- stack(march_2009[[4]], april_2009[[4]], may_2009[[4]])
+Sea_Surface_2009 <- calc(Sea_Surface_2009, fun = mean)
+
+U0_2009 <- stack(march_2009[[5]], april_2009[[5]], may_2009[[5]])
+U0_2009 <- calc(U0, fun = mean)
+
+V0_2009 <- stack(march_2009[[6]], april_2009[[6]], may_2009[[6]])
+V0_2009 <- calc(V0_2009, fun = mean)
+
+## Stack mean values
+predictors_2009 <- stack(bathymetry ,Chlorophyll.a_2009, Elevation_2009, Salinity_2009, Sea_Surface_2009, U0_2009, V0_2009)
 
 ## Test of VIF and Multicollinearity of March data
+vif(march_2009) # calculates vif for the variables in r
+v1_march_2009 <- vifcor(march_2009, th=0.7) # identify collinear variables that should be excluded
+v1_march_2009
 
-vif(march) # calculates vif for the variables in r
-v1_march <- vifcor(march, th=0.9) # identify collinear variables that should be excluded
-v1_march
-re1_march <- exclude(march,v1_march) # exclude the collinear variables that were identified in
+re1_march_2009 <- exclude(march_2009,v1_march_2009) # exclude the collinear variables that were identified in
 # the previous step
-re1_march
-v2_march <- vifstep(march, th=10) # identify collinear variables that should be excluded
-v2_march
-re2_march <- exclude(march, v2_march) # exclude the collinear variables that were identified in
+re1_march_2009
+
+v2_march_2009 <- vifstep(march_2009, th=10) # identify collinear variables that should be excluded
+v2_march_2009
+
+re2_march_2009 <- exclude(march_2009, v2_march_2009) # exclude the collinear variables that were identified in
 # the previous step
-re2_march
-re3_march <- exclude(march) # first, vifstep is called
-re3_march
+re2_march_2009
 
-##
-
-april <- stack(april,bathymetry)
-april <- projectRaster(april, crs=p)
+re3_march_2009 <- exclude(march_2009) # first, vifstep is called
+re3_march_2009
 
 ## Test of VIF and Multicollinearity of April data
+vif(april_2009) # calculates vif for the variables in r
+v1_april_2009 <- vifcor(april_2009, th=0.7) # identify collinear variables that should be excluded
+v1_april_2009
 
-vif(april) # calculates vif for the variables in r
-v1_april <- vifcor(april, th=0.9) # identify collinear variables that should be excluded
-v1_april
-re1_april <- exclude(april,v1_april) # exclude the collinear variables that were identified in
+re1_april_2009 <- exclude(april_2009,v1_april_2009) # exclude the collinear variables that were identified in
 # the previous step
-re1_april
-v2_april <- vifstep(april, th=10) # identify collinear variables that should be excluded
-v2_april
-re2_april <- exclude(april, v2_april) # exclude the collinear variables that were identified in
+re1_april_2009
+
+v2_april_2009 <- vifstep(april_2009, th=10) # identify collinear variables that should be excluded
+v2_april_2009
+
+re2_april_2009 <- exclude(april_2009, v2_april_2009) # exclude the collinear variables that were identified in
 # the previous step
-re2_april
-re3_april <- exclude(april) # first, vifstep is called
-re3_april
+re2_april_2009
 
-##
-
-may <- stack(may,bathymetry)
-may <- projectRaster(may, crs=p)
+re3_april_2009 <- exclude(april_2009) # first, vifstep is called
+re3_april_2009
 
 ## Test of VIF and Multicollinearity of May data
+vif(may_2009) # calculates vif for the variables in r
+v1_may_2009 <- vifcor(may_2009, th=0.7) # identify collinear variables that should be excluded
+v1_may_2009
 
-vif(may) # calculates vif for the variables in r
-v1_may <- vifcor(may, th=0.9) # identify collinear variables that should be excluded
-v1_may
-re1_may <- exclude(may,v1_may) # exclude the collinear variables that were identified in
+re1_may_2009 <- exclude(may_2009,v1_may_2009) # exclude the collinear variables that were identified in
 # the previous step
-re1_may
-v2_may <- vifstep(may, th=10) # identify collinear variables that should be excluded
-v2_may
-re2_may <- exclude(may, v2_may) # exclude the collinear variables that were identified in
-# the previous step
-re2_may
-re3_may <- exclude(may) # first, vifstep is called
-re3_may
+re1_may_2009
 
+v2_may_2009 <- vifstep(may_2009, th=10) # identify collinear variables that should be excluded
+v2_may_2009
+
+re2_may_2009 <- exclude(may_2009, v2_may_2009) # exclude the collinear variables that were identified in
+# the previous step
+re2_may_2009
+
+re3_may_2009 <- exclude(may_2009) # first, vifstep is called
+re3_may_2009
 ##
+
+## Test of VIF and Multicollinearity of Mean data
+vif(predictors_2009) # calculates vif for the variables in r
+v1_predictors_2009 <- vifcor(predictors_2009, th=0.7) # identify collinear variables that should be excluded
+v1_predictors_2009
+
+re1_predictors_2009 <- exclude(predictors_2009,v1_predictors_2009) # exclude the collinear variables that were identified in
+# the previous step
+re1_predictors_2009
+
+v2_predictors_2009 <- vifstep(predictors_2009, th=10) # identify collinear variables that should be excluded
+v2_predictors_2009
+
+re2_predictors_2009 <- exclude(predictors_2009, v2_predictors_2009) # exclude the collinear variables that were identified in
+# the previous step
+re2_predictors_2009
+
+re3_predictors_2009 <- exclude(predictors_2009) # first, vifstep is called
+re3_predictors_2009
+##
+
 # Monthly raster brick which has passed the Multicollinearity test
-predictors_march <- re3_march
-predictors_april <- re3_april
-predictors_may <- re3_may
-
-# Regroup the raster which has passed the Multicollinearity test in one stack
-predictors <- stack(re3_march, re3_april, re3_may)
-
-# Remove the repeated layer bathymetry that it was used in the Multicollinearity 
-#test before
-predictors <- dropLayer(predictors,c(14,21))
-
-# Masked the inland area
-masked_march <- mask(predictors_march, Chile)
-masked_april <- mask(predictors_april, Chile)
-masked_may <- mask(predictors_may, Chile)
-masked <- mask(predictors, Chile)
-
-# Plot the mask to observe if it is works
-plot(masked, 7)
-
-# Remove the inland data that could affect the prediction
-predictors_march[!is.na(masked)] <- NA
-predictors_april[!is.na(masked)] <- NA
-predictors_may[!is.na(masked)] <- NA
-predictors[!is.na(masked)] <- NA
+predictors_march_2009 <- re3_march_2009
+predictors_april_2009 <- re3_april_2009
+predictors_may_2009 <- re3_may_2009
+predictors_2009 <- re3_predictors_2009
+names(predictors_2009) <- c('bathymetry','Chlorophyll.a','Elevation','Salinity','Sea_Surface','U0','V0')
 
 # Plot the raster data to be sure if the mask process was well done
-plot(predictors)
+plot(predictors_2009)
 
 ################## MaxEnt
 
 ### MaxEnt by month
 ## March data
-sdm_march <- maxent(predictors_march, h_penguins_march)
-sdm_march
+sdm_march_2009 <- maxent(predictors_march_2009, removeDuplicates=TRUE, 
+                         h_penguins_march_2009, nbg=10000)
+sdm_march_2009
 
-prediction_march <- predict(sdm_march, predictors_march)
-plot(prediction_march)
-plot(Chile, add=T)
-points(h_penguins_march, col='blue', pch=3)
+prediction_march_2009 <- predict(sdm_march_2009, predictors_march_2009)
+names(prediction_march_2009) <- c('prediction_march_2009')
+plot(prediction_march_2009)
+#plot(Chile, add=T)
+points(h_penguins_march_2009, col='blue', pch=3)
 
 ## April data
-sdm_april <- maxent(predictors_april, h_penguins_april)
-sdm_april
+sdm_april_2009 <- maxent(predictors_april_2009, removeDuplicates=TRUE, 
+                         h_penguins_april_2009, nbg=10000)
+sdm_april_2009
 
-prediction_april <- predict(sdm_april, predictors_april)
-plot(prediction_april)
-plot(Chile, add=T)
-points(h_penguins_april, col='blue', pch=3)
+prediction_april_2009 <- predict(sdm_april_2009, predictors_april_2009)
+names(prediction_april_2009) <- c('prediction_april_2009')
+plot(prediction_april_2009)
+#plot(Chile, add=T)
+points(h_penguins_april_2009, col='blue', pch=3)
 
 ## May data
-sdm_may <- maxent(predictors_may, h_penguins_may)
-sdm_may
+sdm_may_2009 <- maxent(predictors_may_2009, removeDuplicates=TRUE, h_penguins_may_2009, nbg=10000)
+sdm_may_2009
 
-prediction_may <- predict(sdm_may, predictors_may)
-plot(prediction_may)
-plot(Chile, add=T)
-points(h_penguins_may, col='blue', pch=3)
+prediction_may_2009 <- predict(sdm_may_2009, predictors_may_2009)
+names(prediction_may_2009) <- c('prediction_may_2009')
+plot(prediction_may_2009)
+#plot(Chile, add=T)
+points(h_penguins_may_2009, col='blue', pch=3)
 
 ### MaxEnt with all the data
-sdm <- maxent(predictors, h_penguins)
-sdm
+sdm_2009 <- maxent(predictors_2009, removeDuplicates=TRUE, h_penguins_2009, nbg=10000)
+sdm_2009
 
-prediction <- predict(sdm, predictors)
-plot(prediction)
-plot(Chile, add=T)
-points(h_penguins, col='blue', pch=3)
-#ggsave(filename = "prediction.jpeg", width = 20, height = 40, units = "cm")
-
-
-
-
-
-
-
-
-
+prediction_2009 <- predict(sdm_2009, predictors_2009)
+names(prediction_2009) <- c('prediction_2009')
+plot(prediction_2009)
+#plot(Chile, add=T)
+points(h_penguins_2009, col='blue', pch=3)
 
 ################# Kernel Area
+library(adehabitatHR)
 
-#library(adehabitatHR)
-
-#longlatcoor<-SpatialPoints(cbind(h_penguins_csv$Longitude,h_penguins_csv$Latitude), proj4string=CRS("+proj=longlat +datum=WGS84"))
-#longlatcoor
-#plot(longlatcoor)
 # converting
-#utmcoord<-spTransform(longlatcoor,CRS("+proj=utm +south +zone=18 +datum=WGS84"))
-#utmcoord #just to double check the transformation has occured
-#kud<-kernelUD(utmcoord, h="href", grid=100, hlim = c(1, 100), kern = c("bivnorm"), extent = 0.5)
-#plot(kud)
-#area <- kernel.area(kud,percent=seq(50,95,by=5),unin=("m"),unout=("km2"))
-#plot(area)
+utmcoord<-spTransform(h_penguins_2009,CRS("+init=epsg:32718"))
+#just to double check the transformation has occured
+utmcoord
+plot(utmcoord)
+# Estimation of Kernel Home-Range
+ud<-kernelUD(utmcoord)
+image(ud)
+ver95 <- getverticeshr(ud, 95, unout = "km2")
+ver50 <- getverticeshr(ud, 50, unout = "km2")
+plot(ver95)
+plot(ver50)
 
+## Example of estimation using LSCV
+udbis <- kernelUD(utmcoord, h = "LSCV")
+image(udbis)
 
-################### SDM package
-#predictors_csv <- extract(predictors, h_penguins)
-#df <- as.data.frame(cbind(h_penguins, predictors_csv))
-#df <- df %>% select(1:30)
+## Compare the estimation with ad hoc and LSCV method
+## for the smoothing parameter
+cuicui1 <- kernel.area(ud) ## ad hoc
+plot(cuicui1)
+cuicui2 <- kernel.area(udbis) ## LSCV
+plot(cuicui2)
 
-#fractionTraining   <- 0.70
-#fractionValidation <- 0.30
-#sampleSizeTraining   <- floor(fractionTraining   * nrow(df))
-#sampleSizeValidation <- floor(fractionValidation * nrow(df))
-#indicesTraining    <- sort(sample(seq_len(nrow(df)), size=sampleSizeTraining))
-#indicesNotTraining <- setdiff(seq_len(nrow(df)), indicesTraining)
-#indicesValidation  <- sort(sample(indicesNotTraining, size=sampleSizeValidation))
-#dfTraining   <- df[indicesTraining, ]
-#dfValidation <- df[indicesValidation, ]
+## Diagnostic of the cross-validation
+plotLSCV(udbis)
 
+################# SDM analysis
+library(sdm)
 
-#d <- sdmData(sex~bathymetry+Chlorophyll.a_April_2009
-#             +Chlorophyll.a_March_2009+Chlorophyll.a_May_2009
-#             +Elevation_April_2009+Elevation_March_2009+Elevation_May_2009
-#             +Salinity_April_2009+Salinity_March_2009+Salinity_May_2009
-#             +Sea_Surface_Temp_April_2009+Sea_Surface_Temp_March_2009
-#             +Sea_Surface_Temp_May_2009+U0_April_2009+U0_March_2009
-#             +U0_May_2009+V0_April_2009+V0_March_2009+V0_May_2009
-#             ,train=dfTraining,test=dfValidation)
+d_2009 <- sdmData(species~., h_penguins_2009, predictors = predictors_2009, bg = list(n=10000))
+d_2009
 
-#m1 <- sdm(h_penguins_csv~predictors_csv,data=d,methods=c('glm','gbm'))
-#m1
-#m2 <- sdm(h_penguins_csv~predictors_csv,data=d,methods=c('svm'))
-#m2
-#m <- m1 + m2
-#m
+m_2009 <- sdm(species~., d_2009, methods=c('glm', 'svm', 'rf'))
+m_2009
+
+# Output of the model
+gui(m_2009)
+
+p_2009 <- predict(m_2009, predictors_2009, 'Predictors2009.tif', overwrite=TRUE)
+
+p_2009
+
+en_2009 <- ensemble(m_2009, predictors_2009, 'ensemble2009.tif',
+               setting=list(method='weighted',stat='TSS'))
+
+# Replace NA's with 0 for raster data
+en_2009[is.na(en_2009[])] <- 0
+
+plot(en_2009)
+
+mapview(en_2009)
+
+# Prediction using data of 2019
+# To begin with, it is necessary to load the data of the year 2019
+
+bathymetry_2019 <- raster('Raster_data_PTT/bathymetry.tif')
+names(bathymetry_2019) <- c('bathymetry_2019')
+
+march_2019 <- list.files('Raster_data_2019',
+                         full.names = TRUE,
+                         pattern = "March_2019.tif$")
+
+april_2019 <- list.files('Raster_data_2019',
+                         full.names = TRUE,
+                         pattern = "April_2019.tif$")
+
+may_2019 <- list.files('Raster_data_2019',
+                       full.names = TRUE,
+                       pattern = "May_2019.tif$")
+
+### Data preparation
+march_2019 <- stack(march_2019,bathymetry_2019)
+march_2019 <- projectRaster(march_2019, crs=p)
+
+april_2019 <- stack(april_2019,bathymetry_2019)
+april_2019 <- projectRaster(april_2019, crs=p)
+
+may_2019 <- stack(may_2019,bathymetry_2019)
+may_2019 <- projectRaster(may_2019, crs=p)
+
+# Make the projection of the Bathymetry same as the others
+bathymetry_2019 <- projectRaster(bathymetry_2019, crs=p)
+
+### Mean of three months data
+
+Chlorophyll.a_2019 <- stack(march_2019[[1]], april_2019[[1]], may_2019[[1]])
+Chlorophyll.a_2019 <- calc(Chlorophyll.a_2019, fun = mean)
+
+Elevation_2019 <- stack(march_2019[[2]], april_2019[[2]], may_2019[[2]])
+Elevation_2019 <- calc(Elevation_2019, fun = mean)
+
+Salinity_2019 <- stack(march_2019[[3]], april_2019[[3]], may_2019[[3]])
+Salinity_2019 <- calc(Salinity_2019, fun = mean)
+
+Sea_Surface_2019 <- stack(march_2019[[4]], april_2019[[4]], may_2019[[4]])
+Sea_Surface_2019 <- calc(Sea_Surface_2019, fun = mean)
+
+U0_2019 <- stack(march_2019[[5]], april_2019[[5]], may_2019[[5]])
+U0_2019 <- calc(U0_2019, fun = mean)
+
+V0_2019 <- stack(march_2019[[6]], april_2019[[6]], may_2019[[6]])
+V0_2019 <- calc(V0_2019, fun = mean)
+
+## Stack mean values
+predictors_2019 <- stack(bathymetry_2019 ,Chlorophyll.a_2019, Elevation_2019, Salinity_2019, Sea_Surface_2019, U0_2019, V0_2019)
+predictors_2019 <- projectRaster(predictors_2019, crs=p)
+names(predictors_2019) <- c('bathymetry','Chlorophyll.a','Elevation','Salinity','Sea_Surface','U0','V0')
+
+# Prediction of suitability data in the year 2019
+p_2019 <- predict(m_2009, predictors_2019, 'Predictors2019.tif', overwrite=TRUE)
+
+p_2019
+
+en_2019 <- ensemble(m_2009, predictors_2019, 'ensemble2019.tif',
+                    setting=list(method='weighted',stat='TSS'))
+
+# Replace NA's with 0 for raster data
+en_2019[is.na(en_2019[])] <- 0
+
+plot(en_2019)
+
+mapview(en_2019)
