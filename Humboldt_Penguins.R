@@ -50,7 +50,8 @@ h_penguins_may_2009 <- h_penguins_may_2009[,c('species')]
 head(h_penguins_may_2009)
 
 # The data is bind in a total data container
-h_penguins_2009 <- bind(h_penguins_march_2009, h_penguins_april_2009, h_penguins_may_2009)
+h_penguins_2009 <- bind(h_penguins_march_2009, h_penguins_april_2009, 
+                        h_penguins_may_2009)
 head(h_penguins_2009)
 mapview(h_penguins_2009)
 
@@ -98,13 +99,14 @@ Sea_Surface_2009 <- stack(march_2009[[4]], april_2009[[4]], may_2009[[4]])
 Sea_Surface_2009 <- calc(Sea_Surface_2009, fun = mean)
 
 U0_2009 <- stack(march_2009[[5]], april_2009[[5]], may_2009[[5]])
-U0_2009 <- calc(U0, fun = mean)
+U0_2009 <- calc(U0_2009, fun = mean)
 
 V0_2009 <- stack(march_2009[[6]], april_2009[[6]], may_2009[[6]])
 V0_2009 <- calc(V0_2009, fun = mean)
 
 ## Stack mean values
-predictors_2009 <- stack(bathymetry ,Chlorophyll.a_2009, Elevation_2009, Salinity_2009, Sea_Surface_2009, U0_2009, V0_2009)
+predictors_2009 <- stack(bathymetry ,Chlorophyll.a_2009, Elevation_2009, 
+                         Salinity_2009, Sea_Surface_2009, U0_2009, V0_2009)
 
 ## Test of VIF and Multicollinearity of March data
 vif(march_2009) # calculates vif for the variables in r
@@ -189,7 +191,8 @@ predictors_march_2009 <- re3_march_2009
 predictors_april_2009 <- re3_april_2009
 predictors_may_2009 <- re3_may_2009
 predictors_2009 <- re3_predictors_2009
-names(predictors_2009) <- c('bathymetry','Chlorophyll.a','Elevation','Salinity','Sea_Surface','U0','V0')
+names(predictors_2009) <- c('bathymetry','Chlorophyll.a','Elevation',
+                            'Salinity','Sea_Surface','U0','V0')
 
 # Plot the raster data to be sure if the mask process was well done
 plot(predictors_2009)
@@ -220,7 +223,8 @@ plot(prediction_april_2009)
 points(h_penguins_april_2009, col='blue', pch=3)
 
 ## May data
-sdm_may_2009 <- maxent(predictors_may_2009, removeDuplicates=TRUE, h_penguins_may_2009, nbg=10000)
+sdm_may_2009 <- maxent(predictors_may_2009, removeDuplicates=TRUE, 
+                       h_penguins_may_2009, nbg=10000)
 sdm_may_2009
 
 prediction_may_2009 <- predict(sdm_may_2009, predictors_may_2009)
@@ -230,7 +234,8 @@ plot(prediction_may_2009)
 points(h_penguins_may_2009, col='blue', pch=3)
 
 ### MaxEnt with all the data
-sdm_2009 <- maxent(predictors_2009, removeDuplicates=TRUE, h_penguins_2009, nbg=10000)
+sdm_2009 <- maxent(predictors_2009, removeDuplicates=TRUE, h_penguins_2009, 
+                   nbg=10000)
 sdm_2009
 
 prediction_2009 <- predict(sdm_2009, predictors_2009)
@@ -272,7 +277,8 @@ plotLSCV(udbis)
 ################# SDM analysis
 library(sdm)
 
-d_2009 <- sdmData(species~., h_penguins_2009, predictors = predictors_2009, bg = list(n=10000))
+d_2009 <- sdmData(species~., h_penguins_2009, predictors = predictors_2009, 
+                  bg = list(n=10000))
 d_2009
 
 m_2009 <- sdm(species~., d_2009, methods=c('glm', 'svm', 'rf'))
@@ -347,7 +353,8 @@ V0_2019 <- stack(march_2019[[6]], april_2019[[6]], may_2019[[6]])
 V0_2019 <- calc(V0_2019, fun = mean)
 
 ## Stack mean values
-predictors_2019 <- stack(bathymetry_2019 ,Chlorophyll.a_2019, Elevation_2019, Salinity_2019, Sea_Surface_2019, U0_2019, V0_2019)
+predictors_2019 <- stack(bathymetry_2019 ,Chlorophyll.a_2019, Elevation_2019, 
+                         Salinity_2019, Sea_Surface_2019, U0_2019, V0_2019)
 predictors_2019 <- projectRaster(predictors_2019, crs=p)
 names(predictors_2019) <- c('bathymetry','Chlorophyll.a','Elevation','Salinity','Sea_Surface','U0','V0')
 
