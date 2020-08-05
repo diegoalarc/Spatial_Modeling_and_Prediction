@@ -295,15 +295,15 @@ en_2009 <- ensemble(m_2009, predictors_2009, 'ensemble2009.tif',
                setting=list(method='weighted',stat='TSS'))
 
 # Replace NA's with 0 for raster data
-en_2009[is.na(en_2009[])] <- 0
+en_2009[en_2009 < 0.5] <- NA
+en_2009 <- na.omit(en_2009)
 
+# Plot the result of 2009
 plot(en_2009)
-
 mapview(en_2009)
 
 # Prediction using data of 2019
 # To begin with, it is necessary to load the data of the year 2019
-
 bathymetry_2019 <- raster('Raster_data_PTT/bathymetry.tif')
 names(bathymetry_2019) <- c('bathymetry_2019')
 
@@ -367,8 +367,9 @@ en_2019 <- ensemble(m_2009, predictors_2019, 'ensemble2019.tif',
                     setting=list(method='weighted',stat='TSS'))
 
 # Replace NA's with 0 for raster data
-en_2019[is.na(en_2019[])] <- 0
+en_2019[en_2019 < 0.5] <- NA
+en_2019 <- na.omit(en_2019)
 
+# Plot the result of 2019
 plot(en_2019)
-
 mapview(en_2019)
