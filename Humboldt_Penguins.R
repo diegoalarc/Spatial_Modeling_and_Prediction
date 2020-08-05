@@ -298,6 +298,8 @@ en_2009 <- ensemble(m_2009, predictors_2009, 'ensemble2009.tif',
 en_2009[en_2009 < 0.5] <- NA
 en_2009 <- na.omit(en_2009)
 
+writeRaster(en_2009, 'ensemble2009.tif', overwrite=TRUE)
+
 # Plot the result of 2009
 plot(en_2009)
 mapview(en_2009)
@@ -369,6 +371,8 @@ en_2019 <- ensemble(m_2009, predictors_2019, 'ensemble2019.tif',
 # Replace NA's with 0 for raster data
 en_2019[en_2019 < 0.5] <- NA
 en_2019 <- na.omit(en_2019)
+
+writeRaster(en_2019, 'ensemble2019.tif', overwrite=TRUE)
 
 # Plot the result of 2019
 plot(en_2019)
