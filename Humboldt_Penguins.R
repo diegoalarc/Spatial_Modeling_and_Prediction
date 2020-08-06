@@ -4,14 +4,9 @@
 
 library(raster)
 library(rgdal)
-library(maxnet)
-library(dismo)
-library(rJava)
 library(ggplot2)
 library(sf)
 library(sp)
-library(sdm)
-library(usdm)
 library(mapview)
 
 #setwd('/home/diego/GITHUP_REPO/Spatial_Modeling_and_Prediction/')
@@ -198,6 +193,9 @@ names(predictors_2009) <- c('bathymetry','Chlorophyll.a','Elevation',
 plot(predictors_2009)
 
 ################## MaxEnt
+library(maxnet)
+library(dismo)
+library(rJava)
 
 ### MaxEnt by month
 ## March data
@@ -246,6 +244,7 @@ points(h_penguins_2009, col='blue', pch=3)
 
 ################# Kernel Area
 library(adehabitatHR)
+library(usdm)
 
 # converting
 utmcoord<-spTransform(h_penguins_2009,CRS("+init=epsg:32718"))
@@ -281,7 +280,8 @@ d_2009 <- sdmData(species~., h_penguins_2009, predictors = predictors_2009,
                   bg = list(n=10000))
 d_2009
 
-m_2009 <- sdm(species~., d_2009, methods=c('glm', 'svm', 'rf'))
+m_2009 <- sdm(species~., d_2009, methods=c('gam', 'svm', 'rf'),
+              replication='sub',test.percent=30,n=10)
 m_2009
 
 # Output of the model
