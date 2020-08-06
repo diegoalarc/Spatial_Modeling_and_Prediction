@@ -257,11 +257,12 @@ e
 
 # Make a Raster object with predictions from a fitted model object
 px <- predict(pred_nf, xm, ext=ext, na.action=na.exclude,
-              'MaxEnt2009.tif', overwrite=TRUE)
+              'Products/MaxEnt2009.tif', overwrite=TRUE)
 px
+px[px < 0.5] <- NA
 
 par(mfrow=c(1,2))
-plot(px, main='Maxent, raw values')
+plot(px, main='Maxent prediction/ Penguins data 2009')
 plot(Chile, add=TRUE, border='dark grey')
 tr <- threshold(e, 'spec_sens')
 plot(px > tr, main='presence/absence')
@@ -284,7 +285,9 @@ erf
 
 # Make a Raster object with predictions from a fitted model object
 pr <- predict(pred_nf, rf1, na.action=na.exclude, 
-              ext=ext, 'RandomForest2009.tif', overwrite=TRUE)
+              ext=ext, 'Products/RandomForest2009.tif', overwrite=TRUE)
+pr
+pr[pr < 0.5] <- NA
 
 par(mfrow=c(1,2))
 plot(pr, main='Random Forest prediction/ Penguins data 2009')
@@ -358,9 +361,10 @@ names(predictors_2019) <- c('bathymetry','Chlorophyll.a','Elevation','Salinity',
 
 # using MaxEnt
 mx_2019 <- predict(predictors_2019, xm, na.action=na.exclude, 
-                   ext=ext, 'MaxEnt2019.tif', overwrite=TRUE)
+                   ext=ext, 'Products/MaxEnt2019.tif', overwrite=TRUE)
 
 mx_2019
+mx_2019[mx_2019 < 0.5] <- NA
 
 par(mfrow=c(1,2))
 plot(mx_2019, main='Maxent prediction/ Penguins data 2019')
@@ -373,9 +377,10 @@ points(pres_train, pch='+')
 
 # using Random Forest prediction
 rf_2019 <- predict(predictors_2019, rf1, na.action=na.exclude, 
-                   ext=ext, 'RandomForest2019.tif', overwrite=TRUE)
+                   ext=ext, 'Products/RandomForest2019.tif', overwrite=TRUE)
 
 rf_2019
+rf_2019[rf_2019 < 0.5] <- NA
 
 par(mfrow=c(1,2))
 plot(rf_2019, main='Random Forest prediction/ Penguins data 2019')
