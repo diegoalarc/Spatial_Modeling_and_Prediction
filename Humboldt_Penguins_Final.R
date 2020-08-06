@@ -82,9 +82,11 @@ ext <- extent(predictors_2009[[1]])
 h_penguins <- read.csv('HumboldtPenguins_Punihuil_PTT.csv',  header=TRUE,  sep=',')
 h_penguins <- h_penguins[,8:9]
 presvals <- extract(predictors_2009, h_penguins)
+presvals <- na.omit(presvals)
 set.seed(0)
 backgr <- randomPoints(predictors_2009, 500)
 absvals <- extract(predictors_2009, backgr)
+absvals <- na.omit(absvals)
 pb <- c(rep(1, nrow(presvals)), rep(0, nrow(absvals)))
 sdmdata <- data.frame(cbind(pb, rbind(presvals, absvals)))
 
@@ -120,12 +122,9 @@ pb_train <- c(rep(1, nrow(pres_train)), rep(0, nrow(backg_train)))
 envtrain <- extract(pred_nf, train)
 envtrain <- data.frame( cbind(pa=pb_train, envtrain) )
 envtrain[,'biome'] = factor(envtrain[,'biome'], levels=1:14)
-envtrain <- na.omit(envtrain)
 head(envtrain)
 testpres <- data.frame( extract(pred_nf, pres_test) )
 testbackg <- data.frame( extract(pred_nf, backg_test) )
-testpres <- na.omit(testpres)
-testbackg <- na.omit(testbackg)
 
 ################## MaxEnt
 library(maxnet)
@@ -140,7 +139,10 @@ response(xm)
 
 e <- evaluate(pres_test, backg_test, xm, pred_nf)
 e
-px <- predict(pred_nf, xm, ext=ext, 'MaxEnt2009.tif', overwrite=TRUE)
+px <- predict(pred_nf, xm, ext=ext, na.action=na.exclude,
+              'MaxEnt2009.tif', overwrite=TRUE)
+px
+
 par(mfrow=c(1,2))
 plot(px, main='Maxent, raw values')
 plot(Chile, add=TRUE, border='dark grey')
@@ -153,17 +155,17 @@ points(pres_train, pch='+')
 library(randomForest)
 
 # Preparing the model
-model <- factor(pa) ~ bathymetry + Chlorophyll.a + Elevation + Salinity + Sea_Surface + U0 + V0
+model <- pa ~ bathymetry + Chlorophyll.a + Elevation + Salinity + Sea_Surface + U0 + V0
 
-rf1 <- randomForest(model, data=envtrain)
-
-rf2 <- randomForest(envtrain[,1:8], factor(pb_train))
+rf1 <- randomForest(model, data=envtrain, na.action=na.exclude)
 
 # Evaluation of test and background data
 erf <- evaluate(testpres, testbackg, rf1)
 erf
 
-pr <- predict(pred_nf, rf1, ext=ext, 'RandomForest2009.tif', overwrite=TRUE)
+pr <- predict(pred_nf, rf1, na.action=na.exclude, 
+              ext=ext, 'RandomForest2009.tif', overwrite=TRUE)
+
 par(mfrow=c(1,2))
 plot(pr, main='Random Forest prediction/ Penguins data 2009')
 plot(Chile, add=TRUE, border='dark grey')
@@ -172,7 +174,6 @@ plot(pr > tr, main='presence/absence')
 plot(Chile, add=TRUE, border='dark grey')
 points(pres_train, pch='+')
 points(backg_train, pch='-', cex=0.25)
-
 
 ################# Prediction using data of 2019
 # To begin with, it is necessary to load the data of the year 2019
@@ -233,10 +234,14 @@ predictors_2019 <- na.omit(predictors_2019)
 
 names(predictors_2019) <- c('bathymetry','Chlorophyll.a','Elevation','Salinity','Sea_Surface','U0','V0')
 
-# Prediction of suitability data in the year 2019
+############################## Prediction of suitability data in the year 2019
 
 # using MaxEnt
-mx_2019 <- predict(predictors_2019, xm, ext=ext, 'MaxEnt2019.tif', overwrite=TRUE)
+mx_2019 <- predict(predictors_2019, xm, na.action=na.exclude, 
+                   ext=ext, 'MaxEnt2019.tif', overwrite=TRUE)
+
+mx_2019
+
 par(mfrow=c(1,2))
 plot(mx_2019, main='Maxent prediction/ Penguins data 2019')
 plot(Chile, add=TRUE, border='dark grey')
@@ -247,8 +252,11 @@ points(pres_train, pch='+')
 
 
 # using Random Forest prediction
-rf_2019 <- predict(predictors_2019, rf1, ext=ext, 'RandomForest2019.tif', overwrite=TRUE)
+rf_2019 <- predict(predictors_2019, rf1, na.action=na.exclude, 
+                   ext=ext, 'RandomForest2019.tif', overwrite=TRUE)
+
 rf_2019
+
 par(mfrow=c(1,2))
 plot(rf_2019, main='Random Forest prediction/ Penguins data 2019')
 plot(Chile, add=TRUE, border='dark grey')
