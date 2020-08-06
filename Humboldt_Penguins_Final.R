@@ -2,6 +2,8 @@
 # the Humboldt Penguins located in Chile.
 # The data was acquired by Movebank directly from Dr. Klemens Pütz
 
+library(sdm)
+library(usdm)
 library(dismo)
 library(raster)
 library(maptools)
@@ -33,7 +35,7 @@ may_2009 <- list.files('Raster_data_PTT',
                        full.names = TRUE,
                        pattern = "May_2009.tif$")
 
-### Data preparation to apply the Multicollinearity test by month
+### Data preparation to apply the Multi-collinearity test by month
 march_2009 <- stack(march_2009,bathymetry)
 march_2009 <- projectRaster(march_2009, crs=p)
 
@@ -46,25 +48,31 @@ may_2009 <- projectRaster(may_2009, crs=p)
 # Make the projection of the Bathymetry same as the others
 bathymetry <- projectRaster(bathymetry, crs=p)
 
-### Mean of three months data
+### Mean of three months data and clean NA values
 
 Chlorophyll.a_2009 <- stack(march_2009[[1]], april_2009[[1]], may_2009[[1]])
 Chlorophyll.a_2009 <- calc(Chlorophyll.a_2009, fun = mean)
+Chlorophyll.a_2009 <- na.omit(Chlorophyll.a_2009)
 
 Elevation_2009 <- stack(march_2009[[2]], april_2009[[2]], may_2009[[2]])
 Elevation_2009 <- calc(Elevation_2009, fun = mean)
+Elevation_2009 <- na.omit(Elevation_2009)
 
 Salinity_2009 <- stack(march_2009[[3]], april_2009[[3]], may_2009[[3]])
 Salinity_2009 <- calc(Salinity_2009, fun = mean)
+Salinity_2009 <- na.omit(Salinity_2009)
 
 Sea_Surface_2009 <- stack(march_2009[[4]], april_2009[[4]], may_2009[[4]])
 Sea_Surface_2009 <- calc(Sea_Surface_2009, fun = mean)
+Sea_Surface_2009 <- na.omit(Sea_Surface_2009)
 
 U0_2009 <- stack(march_2009[[5]], april_2009[[5]], may_2009[[5]])
 U0_2009 <- calc(U0_2009, fun = mean)
+U0_2009 <- na.omit(U0_2009)
 
 V0_2009 <- stack(march_2009[[6]], april_2009[[6]], may_2009[[6]])
 V0_2009 <- calc(V0_2009, fun = mean)
+V0_2009 <- na.omit(V0_2009)
 
 ## Stack mean values
 predictors_2009 <- stack(bathymetry ,Chlorophyll.a_2009, Elevation_2009, 
@@ -72,14 +80,121 @@ predictors_2009 <- stack(bathymetry ,Chlorophyll.a_2009, Elevation_2009,
 
 predictors_2009 <- na.omit(predictors_2009)
 
-# Name of each layer
+################ Test of VIF and Multicollinearity of March data
+# calculates vif for the variables in r
+vif(march_2009)
+# identify collinear variables that should be excluded
+v1_march_2009 <- vifcor(march_2009, th=0.7)
+v1_march_2009
+
+# exclude the collinear variables that were identified in
+# the previous step
+re1_march_2009 <- exclude(march_2009,v1_march_2009)
+re1_march_2009
+
+# identify collinear variables that should be excluded
+v2_march_2009 <- vifstep(march_2009, th=10)
+v2_march_2009
+
+# exclude the collinear variables that were identified in
+# the previous step
+re2_march_2009 <- exclude(march_2009, v2_march_2009)
+re2_march_2009
+
+# first, vifstep is called
+re3_march_2009 <- exclude(march_2009)
+re3_march_2009
+
+################ Test of VIF and Multicollinearity of April data
+# calculates vif for the variables in r
+vif(april_2009)
+# identify collinear variables that should be excluded
+v1_april_2009 <- vifcor(april_2009, th=0.7)
+v1_april_2009
+
+# exclude the collinear variables that were identified in
+# the previous step
+re1_april_2009 <- exclude(april_2009,v1_april_2009)
+re1_april_2009
+
+# identify collinear variables that should be excluded
+v2_april_2009 <- vifstep(april_2009, th=10)
+v2_april_2009
+
+# exclude the collinear variables that were identified in
+# the previous step
+re2_april_2009 <- exclude(april_2009, v2_april_2009)
+re2_april_2009
+
+# first, vifstep is called
+re3_april_2009 <- exclude(april_2009)
+re3_april_2009
+
+################ Test of VIF and Multicollinearity of May data
+# calculates vif for the variables in r
+vif(may_2009)
+# identify collinear variables that should be excluded
+v1_may_2009 <- vifcor(may_2009, th=0.7)
+v1_may_2009
+
+# exclude the collinear variables that were identified in
+# the previous step
+re1_may_2009 <- exclude(may_2009,v1_may_2009)
+re1_may_2009
+
+# identify collinear variables that should be excluded
+v2_may_2009 <- vifstep(may_2009, th=10)
+v2_may_2009
+
+# exclude the collinear variables that were identified in
+# the previous step
+re2_may_2009 <- exclude(may_2009, v2_may_2009)
+re2_may_2009
+
+re3_may_2009 <- exclude(may_2009) # first, vifstep is called
+re3_may_2009
+
+################ Test of VIF and Multi-collinearity of Mean data
+# calculates vif for the variables in r
+vif(predictors_2009)
+# identify collinear variables that should be excluded
+v1_predictors_2009 <- vifcor(predictors_2009, th=0.7)
+v1_predictors_2009
+
+# exclude the collinear variables that were identified in
+# the previous step
+re1_predictors_2009 <- exclude(predictors_2009,v1_predictors_2009)
+re1_predictors_2009
+
+# identify collinear variables that should be excluded
+v2_predictors_2009 <- vifstep(predictors_2009, th=10)
+v2_predictors_2009
+
+# exclude the collinear variables that were identified in
+# the previous step
+re2_predictors_2009 <- exclude(predictors_2009, v2_predictors_2009)
+re2_predictors_2009
+
+# first, vifstep is called
+re3_predictors_2009 <- exclude(predictors_2009)
+re3_predictors_2009
+
+################## End Multi-collinearity and begging of raster stack
+# Monthly raster brick which has passed the Multicollinearity test
+predictors_march_2009 <- re3_march_2009
+predictors_april_2009 <- re3_april_2009
+predictors_may_2009 <- re3_may_2009
+predictors_2009 <- re3_predictors_2009
 names(predictors_2009) <- c('bathymetry','Chlorophyll.a','Elevation',
                             'Salinity','Sea_Surface','U0','V0')
+
+# Clean NA data from the predictors double-check
+predictors_2009 <- na.omit(predictors_2009)
 
 # Extention of the study area
 ext <- extent(predictors_2009[[1]])
 
-h_penguins <- read.csv('HumboldtPenguins_Punihuil_PTT.csv',  header=TRUE,  sep=',')
+h_penguins <- read.csv('HumboldtPenguins_Punihuil_PTT.csv', header=TRUE,  sep=',')
 h_penguins <- h_penguins[,8:9]
 presvals <- extract(predictors_2009, h_penguins)
 presvals <- na.omit(presvals)
@@ -121,7 +236,6 @@ train <- rbind(pres_train, backg_train)
 pb_train <- c(rep(1, nrow(pres_train)), rep(0, nrow(backg_train)))
 envtrain <- extract(pred_nf, train)
 envtrain <- data.frame( cbind(pa=pb_train, envtrain) )
-envtrain[,'biome'] = factor(envtrain[,'biome'], levels=1:14)
 head(envtrain)
 testpres <- data.frame( extract(pred_nf, pres_test) )
 testbackg <- data.frame( extract(pred_nf, backg_test) )
@@ -131,14 +245,17 @@ library(maxnet)
 library(dismo)
 library(rJava)
 
-xm <- maxent(pred_nf, pres_train, removeDuplicates=TRUE, progress='text')
+xm <- maxent(pred_nf, pres_train, removeDuplicates=TRUE)
 plot(xm)
 
 # A response plot
 response(xm)
 
+# Cross-validation of models with presence/absence data
 e <- evaluate(pres_test, backg_test, xm, pred_nf)
 e
+
+# Make a Raster object with predictions from a fitted model object
 px <- predict(pred_nf, xm, ext=ext, na.action=na.exclude,
               'MaxEnt2009.tif', overwrite=TRUE)
 px
@@ -157,12 +274,15 @@ library(randomForest)
 # Preparing the model
 model <- pa ~ bathymetry + Chlorophyll.a + Elevation + Salinity + Sea_Surface + U0 + V0
 
+# RandomForest implements Breiman's random forest algorithm
 rf1 <- randomForest(model, data=envtrain, na.action=na.exclude)
+rf1
 
 # Evaluation of test and background data
 erf <- evaluate(testpres, testbackg, rf1)
 erf
 
+# Make a Raster object with predictions from a fitted model object
 pr <- predict(pred_nf, rf1, na.action=na.exclude, 
               ext=ext, 'RandomForest2009.tif', overwrite=TRUE)
 
@@ -192,7 +312,7 @@ may_2019 <- list.files('Raster_data_2019',
                        full.names = TRUE,
                        pattern = "May_2019.tif$")
 
-### Data preparation
+############### Data preparation
 march_2019 <- stack(march_2019,bathymetry_2019)
 march_2019 <- projectRaster(march_2019, crs=p)
 
