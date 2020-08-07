@@ -297,6 +297,105 @@ plot(Chile, add=TRUE, border='dark grey')
 points(pres_train, pch='+')
 points(backg_train, pch='-', cex=0.25)
 
+################# Prediction using data of 2019
+# To begin with, it is necessary to load the data of the year 2019
+bathymetry_2019 <- raster('Raster_data_2019/bathymetry.tif') %>% projectRaster(crs=p)
+
+names(bathymetry_2019) <- c('bathymetry_2019')
+
+march_2019 <- list.files('Raster_data_2019',
+                         full.names = TRUE,
+                         pattern = "March_2019.tif$")
+
+april_2019 <- list.files('Raster_data_2019',
+                         full.names = TRUE,
+                         pattern = "April_2019.tif$")
+
+may_2019 <- list.files('Raster_data_2019',
+                       full.names = TRUE,
+                       pattern = "May_2019.tif$")
+
+############### Data preparation
+march_2019 <- stack(march_2019) %>% projectRaster(crs=p)
+
+april_2019 <- stack(april_2019) %>% projectRaster(crs=p)
+
+may_2019 <- stack(may_2019) %>% projectRaster(crs=p)
+
+### Mean of three months data
+
+Chlorophyll.a_2019 <- stack(march_2019[[1]], april_2019[[1]], may_2019[[1]]) %>% 
+  calc(fun = mean) %>% 
+  na.omit()
+
+Elevation_2019 <- stack(march_2019[[2]], april_2019[[2]], may_2019[[2]]) %>% 
+  calc(fun = mean) %>% 
+  na.omit()
+
+Salinity_2019 <- stack(march_2019[[3]], april_2019[[3]], may_2019[[3]]) %>% 
+  calc(fun = mean) %>% 
+  na.omit()
+
+Sea_Surface_2019 <- stack(march_2019[[4]], april_2019[[4]], may_2019[[4]]) %>% 
+  calc(fun = mean) %>% 
+  na.omit()
+
+U0_2019 <- stack(march_2019[[5]], april_2019[[5]], may_2019[[5]]) %>% 
+  calc(fun = mean) %>% 
+  na.omit()
+
+V0_2019 <- stack(march_2019[[6]], april_2019[[6]], may_2019[[6]]) %>% 
+  calc(fun = mean) %>% 
+  na.omit()
+
+## Stack mean values
+predictors_2019 <- stack(bathymetry_2019 ,Chlorophyll.a_2019, Elevation_2019, 
+                         Salinity_2019, Sea_Surface_2019, U0_2019, V0_2019) %>% 
+                        na.omit()
+
+names(predictors_2019) <- c('bathymetry','Chlorophyll.a','Elevation',
+                            'Salinity','Sea_Surface','U0','V0')
+
+############################## Prediction of suitability data in the year 2019
+
+# using MaxEnt
+mx_2019 <- predict(predictors_2019, xm, na.action=na.exclude, 
+                   ext=ext, 'Products/MaxEnt2019.tif', 
+                   overwrite=TRUE) %>% projectRaster(crs=p)
+
+mx_2019
+mx_2019[mx_2019 < 0.4] <- NA
+
+#mapview(mx_2019)
+
+par(mfrow=c(1,2))
+plot(mx_2019, main='Maxent prediction/ Penguins data 2019')
+plot(Chile, add=TRUE, border='dark grey')
+tr <- threshold(e, 'spec_sens')
+plot(mx_2019 > tr, main='presence/absence')
+plot(Chile, add=TRUE, border='dark grey')
+points(pres_train, pch='+')
+
+
+# using Random Forest prediction
+rf_2019 <- predict(predictors_2019, rf1, na.action=na.exclude, 
+                   ext=ext, 'Products/RandomForest2019.tif', 
+                   overwrite=TRUE) %>% projectRaster(crs=p)
+
+rf_2019
+rf_2019[rf_2019 < 0.4] <- NA
+
+#mapview(rf_2019)
+
+par(mfrow=c(1,2))
+plot(rf_2019, main='Random Forest prediction/ Penguins data 2019')
+plot(Chile, add=TRUE, border='dark grey')
+tr <- threshold(erf, 'spec_sens')
+plot(rf_2019 > tr, main='presence/absence')
+plot(Chile, add=TRUE, border='dark grey')
+points(pres_train, pch='+')
+points(backg_train, pch='-', cex=0.25)
+
 ################# Prediction using data of 2020
 # To begin with, it is necessary to load the data of the year 2020
 bathymetry_2020 <- raster('Raster_data_2020/bathymetry.tif') %>% projectRaster(crs=p)
@@ -351,7 +450,7 @@ V0_2020 <- stack(march_2020[[6]], april_2020[[6]], may_2020[[6]]) %>%
 ## Stack mean values
 predictors_2020 <- stack(bathymetry_2020 ,Chlorophyll.a_2020, Elevation_2020, 
                          Salinity_2020, Sea_Surface_2020, U0_2020, V0_2020) %>% 
-                        na.omit()
+  na.omit()
 
 names(predictors_2020) <- c('bathymetry','Chlorophyll.a','Elevation',
                             'Salinity','Sea_Surface','U0','V0')
