@@ -7,6 +7,7 @@ library(usdm)
 library(dismo)
 library(raster)
 library(maptools)
+library(mapview)
 
 # Set the projection that will be use in this project
 r <- CRS("+proj=longlat +datum=WGS84")
@@ -381,6 +382,8 @@ rf_2019 <- predict(predictors_2019, rf1, na.action=na.exclude,
 
 rf_2019
 rf_2019[rf_2019 < 0.5] <- NA
+
+mapview(rf_2019)
 
 par(mfrow=c(1,2))
 plot(rf_2019, main='Random Forest prediction/ Penguins data 2019')
