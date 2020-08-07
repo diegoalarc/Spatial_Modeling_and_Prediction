@@ -43,9 +43,6 @@ april_2009 <- stack(april_2009,bathymetry) %>% projectRaster(crs=p)
 
 may_2009 <- stack(may_2009,bathymetry) %>% projectRaster(crs=p)
 
-# Make the projection of the Bathymetry same as the others
-bathymetry <- projectRaster(bathymetry, crs=p)
-
 ### Mean of three months data and clean NA values
 
 Chlorophyll.a_2009 <- stack(march_2009[[1]], april_2009[[1]], may_2009[[1]]) %>% 
@@ -72,10 +69,15 @@ V0_2009 <- stack(march_2009[[6]], april_2009[[6]], may_2009[[6]]) %>%
   calc(fun = mean) %>% 
   na.omit()
 
+bathymetry_2009 <- raster('Raster_data_PTT/bathymetry.tif') %>% projectRaster(crs=p)
+
 ## Stack mean values
-predictors_2009 <- stack(bathymetry ,Chlorophyll.a_2009, Elevation_2009, 
+predictors_2009 <- stack(bathymetry_2009 ,Chlorophyll.a_2009, Elevation_2009, 
                          Salinity_2009, Sea_Surface_2009, U0_2009, V0_2009) %>% 
   na.omit()
+
+names(predictors_2009) <- c('bathymetry','Chlorophyll.a','Elevation',
+                            'Salinity','Sea_Surface','U0','V0')
 
 ################ Test of VIF and Multicollinearity of March data
 # calculates vif for the variables in r
@@ -251,9 +253,9 @@ e
 
 # Make a Raster object with predictions from a fitted model object
 px <- predict(pred_nf, xm, ext=ext, na.action=na.exclude,
-              'Products/MaxEnt2009.tif', overwrite=TRUE) %>% projectRaster(crs=p)
+              'Products/MaxEnt2009.tif', overwrite=TRUE)
 px
-px[px < 0.5] <- NA
+px[px < 0.4] <- NA
 
 par(mfrow=c(1,2))
 plot(px, main='Maxent prediction/ Penguins data 2009')
@@ -281,9 +283,9 @@ erf
 # Make a Raster object with predictions from a fitted model object
 pr <- predict(pred_nf, rf1, na.action=na.exclude, 
               ext=ext, 'Products/RandomForest2009.tif', 
-              overwrite=TRUE) %>% projectRaster(crs=p)
+              overwrite=TRUE)
 pr
-pr[pr < 0.5] <- NA
+pr[pr < 0.4] <- NA
 
 par(mfrow=c(1,2))
 plot(pr, main='Random Forest prediction/ Penguins data 2009')
@@ -296,7 +298,7 @@ points(backg_train, pch='-', cex=0.25)
 
 ################# Prediction using data of 2020
 # To begin with, it is necessary to load the data of the year 2020
-bathymetry_2020 <- raster('Raster_data_2020/bathymetry.tif')
+bathymetry_2020 <- raster('Raster_data_2020/bathymetry.tif') %>% projectRaster(crs=p)
 
 names(bathymetry_2020) <- c('bathymetry_2020')
 
@@ -304,7 +306,7 @@ march_2020 <- list.files('Raster_data_2020',
                          full.names = TRUE,
                          pattern = "March_2020.tif$")
 
-april_2020 <- list.files('Raster_data_22020',
+april_2020 <- list.files('Raster_data_2020',
                          full.names = TRUE,
                          pattern = "April_2020.tif$")
 
@@ -313,11 +315,11 @@ may_2020 <- list.files('Raster_data_2020',
                        pattern = "May_2020.tif$")
 
 ############### Data preparation
-march_2020 <- stack(march_2020,bathymetry_2020) %>% projectRaster(crs=p)
+march_2020 <- stack(march_2020) %>% projectRaster(crs=p)
 
-april_2020 <- stack(april_2020,bathymetry_2020) %>% projectRaster(crs=p)
+april_2020 <- stack(april_2020) %>% projectRaster(crs=p)
 
-may_2020 <- stack(may_2020,bathymetry_2020) %>% projectRaster(crs=p)
+may_2020 <- stack(may_2020) %>% projectRaster(crs=p)
 
 ### Mean of three months data
 
@@ -358,7 +360,7 @@ names(predictors_2020) <- c('bathymetry','Chlorophyll.a','Elevation',
 # using MaxEnt
 mx_2020 <- predict(predictors_2020, xm, na.action=na.exclude, 
                    ext=ext, 'Products/MaxEnt2020.tif', 
-                   overwrite=TRUE) %>% projectRaster(crs=p)
+                   overwrite=TRUE)
 
 mx_2020
 mx_2020[mx_2020 < 0.4] <- NA
@@ -377,7 +379,7 @@ points(pres_train, pch='+')
 # using Random Forest prediction
 rf_2020 <- predict(predictors_2020, rf1, na.action=na.exclude, 
                    ext=ext, 'Products/RandomForest2020.tif', 
-                   overwrite=TRUE) %>% projectRaster(crs=p)
+                   overwrite=TRUE)
 
 rf_2020
 rf_2020[rf_2020 < 0.4] <- NA
