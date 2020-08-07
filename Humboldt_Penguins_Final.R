@@ -253,7 +253,8 @@ e
 
 # Make a Raster object with predictions from a fitted model object
 px <- predict(pred_nf, xm, ext=ext, na.action=na.exclude,
-              'Products/MaxEnt2009.tif', overwrite=TRUE)
+              'Products/MaxEnt2009.tif', 
+              overwrite=TRUE) %>% projectRaster(crs=p)
 px
 px[px < 0.4] <- NA
 
@@ -283,7 +284,7 @@ erf
 # Make a Raster object with predictions from a fitted model object
 pr <- predict(pred_nf, rf1, na.action=na.exclude, 
               ext=ext, 'Products/RandomForest2009.tif', 
-              overwrite=TRUE)
+              overwrite=TRUE) %>% projectRaster(crs=p)
 pr
 pr[pr < 0.4] <- NA
 
@@ -360,7 +361,7 @@ names(predictors_2020) <- c('bathymetry','Chlorophyll.a','Elevation',
 # using MaxEnt
 mx_2020 <- predict(predictors_2020, xm, na.action=na.exclude, 
                    ext=ext, 'Products/MaxEnt2020.tif', 
-                   overwrite=TRUE)
+                   overwrite=TRUE) %>% projectRaster(crs=p)
 
 mx_2020
 mx_2020[mx_2020 < 0.4] <- NA
@@ -379,7 +380,7 @@ points(pres_train, pch='+')
 # using Random Forest prediction
 rf_2020 <- predict(predictors_2020, rf1, na.action=na.exclude, 
                    ext=ext, 'Products/RandomForest2020.tif', 
-                   overwrite=TRUE)
+                   overwrite=TRUE) %>% projectRaster(crs=p)
 
 rf_2020
 rf_2020[rf_2020 < 0.4] <- NA
