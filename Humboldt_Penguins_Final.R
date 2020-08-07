@@ -178,15 +178,12 @@ re3_predictors_2009
 
 ################## End Multi-collinearity and begging of raster stack
 # Monthly raster brick which has passed the Multicollinearity test
-predictors_march_2009 <- re3_march_2009
-predictors_april_2009 <- re3_april_2009
-predictors_may_2009 <- re3_may_2009
-predictors_2009 <- re3_predictors_2009
+predictors_march_2009 <- re3_march_2009 %>% na.omit()
+predictors_april_2009 <- re3_april_2009 %>% na.omit()
+predictors_may_2009 <- re3_may_2009 %>% na.omit()
+predictors_2009 <- re3_predictors_2009 %>% na.omit()
 names(predictors_2009) <- c('bathymetry','Chlorophyll.a','Elevation',
                             'Salinity','Sea_Surface','U0','V0')
-
-# Clean NA data from the predictors double-check
-predictors_2009 <- na.omit(predictors_2009)
 
 # Extention of the study area
 ext <- extent(predictors_2009[[1]])
