@@ -6,7 +6,7 @@ library(sdm)
 library(usdm)
 library(dismo)
 library(raster)
-library(maptools)
+library(dplyr)
 library(mapview)
 
 # Set the projection that will be use in this project
@@ -37,49 +37,45 @@ may_2009 <- list.files('Raster_data_PTT',
                        pattern = "May_2009.tif$")
 
 ### Data preparation to apply the Multi-collinearity test by month
-march_2009 <- stack(march_2009,bathymetry)
-march_2009 <- projectRaster(march_2009, crs=p)
+march_2009 <- stack(march_2009,bathymetry) %>% projectRaster(crs=p)
 
-april_2009 <- stack(april_2009,bathymetry)
-april_2009 <- projectRaster(april_2009, crs=p)
+april_2009 <- stack(april_2009,bathymetry) %>% projectRaster(crs=p)
 
-may_2009 <- stack(may_2009,bathymetry)
-may_2009 <- projectRaster(may_2009, crs=p)
+may_2009 <- stack(may_2009,bathymetry) %>% projectRaster(crs=p)
 
 # Make the projection of the Bathymetry same as the others
 bathymetry <- projectRaster(bathymetry, crs=p)
 
 ### Mean of three months data and clean NA values
 
-Chlorophyll.a_2009 <- stack(march_2009[[1]], april_2009[[1]], may_2009[[1]])
-Chlorophyll.a_2009 <- calc(Chlorophyll.a_2009, fun = mean)
-Chlorophyll.a_2009 <- na.omit(Chlorophyll.a_2009)
+Chlorophyll.a_2009 <- stack(march_2009[[1]], april_2009[[1]], may_2009[[1]]) %>% 
+  calc(fun = mean) %>% 
+  na.omit()
 
-Elevation_2009 <- stack(march_2009[[2]], april_2009[[2]], may_2009[[2]])
-Elevation_2009 <- calc(Elevation_2009, fun = mean)
-Elevation_2009 <- na.omit(Elevation_2009)
+Elevation_2009 <- stack(march_2009[[2]], april_2009[[2]], may_2009[[2]]) %>% 
+  calc(fun = mean) %>% 
+  na.omit()
 
-Salinity_2009 <- stack(march_2009[[3]], april_2009[[3]], may_2009[[3]])
-Salinity_2009 <- calc(Salinity_2009, fun = mean)
-Salinity_2009 <- na.omit(Salinity_2009)
+Salinity_2009 <- stack(march_2009[[3]], april_2009[[3]], may_2009[[3]]) %>% 
+  calc(fun = mean) %>% 
+  na.omit()
 
-Sea_Surface_2009 <- stack(march_2009[[4]], april_2009[[4]], may_2009[[4]])
-Sea_Surface_2009 <- calc(Sea_Surface_2009, fun = mean)
-Sea_Surface_2009 <- na.omit(Sea_Surface_2009)
+Sea_Surface_2009 <- stack(march_2009[[4]], april_2009[[4]], may_2009[[4]]) %>% 
+  calc(fun = mean) %>% 
+  na.omit()
 
-U0_2009 <- stack(march_2009[[5]], april_2009[[5]], may_2009[[5]])
-U0_2009 <- calc(U0_2009, fun = mean)
-U0_2009 <- na.omit(U0_2009)
+U0_2009 <- stack(march_2009[[5]], april_2009[[5]], may_2009[[5]]) %>% 
+  calc(fun = mean) %>% 
+  na.omit()
 
-V0_2009 <- stack(march_2009[[6]], april_2009[[6]], may_2009[[6]])
-V0_2009 <- calc(V0_2009, fun = mean)
-V0_2009 <- na.omit(V0_2009)
+V0_2009 <- stack(march_2009[[6]], april_2009[[6]], may_2009[[6]]) %>% 
+  calc(fun = mean) %>% 
+  na.omit()
 
 ## Stack mean values
 predictors_2009 <- stack(bathymetry ,Chlorophyll.a_2009, Elevation_2009, 
-                         Salinity_2009, Sea_Surface_2009, U0_2009, V0_2009)
-
-predictors_2009 <- na.omit(predictors_2009)
+                         Salinity_2009, Sea_Surface_2009, U0_2009, V0_2009) %>% 
+  na.omit()
 
 ################ Test of VIF and Multicollinearity of March data
 # calculates vif for the variables in r
@@ -197,12 +193,12 @@ ext <- extent(predictors_2009[[1]])
 
 h_penguins <- read.csv('HumboldtPenguins_Punihuil_PTT.csv', header=TRUE,  sep=',')
 h_penguins <- h_penguins[,8:9]
-presvals <- extract(predictors_2009, h_penguins)
-presvals <- na.omit(presvals)
+presvals <- extract(predictors_2009, h_penguins) %>% na.omit()
+
 set.seed(0)
 backgr <- randomPoints(predictors_2009, 500)
-absvals <- extract(predictors_2009, backgr)
-absvals <- na.omit(absvals)
+absvals <- extract(predictors_2009, backgr) %>% na.omit()
+
 pb <- c(rep(1, nrow(presvals)), rep(0, nrow(absvals)))
 sdmdata <- data.frame(cbind(pb, rbind(presvals, absvals)))
 
@@ -258,7 +254,7 @@ e
 
 # Make a Raster object with predictions from a fitted model object
 px <- predict(pred_nf, xm, ext=ext, na.action=na.exclude,
-              'Products/MaxEnt2009.tif', overwrite=TRUE)
+              'Products/MaxEnt2009.tif', overwrite=TRUE) %>% projectRaster(crs=p)
 px
 px[px < 0.5] <- NA
 
@@ -274,7 +270,8 @@ points(pres_train, pch='+')
 library(randomForest)
 
 # Preparing the model
-model <- pa ~ bathymetry + Chlorophyll.a + Elevation + Salinity + Sea_Surface + U0 + V0
+model <- pa ~ bathymetry + Chlorophyll.a + 
+  Elevation + Salinity + Sea_Surface + U0 + V0
 
 # RandomForest implements Breiman's random forest algorithm
 rf1 <- randomForest(model, data=envtrain, na.action=na.exclude)
@@ -286,7 +283,8 @@ erf
 
 # Make a Raster object with predictions from a fitted model object
 pr <- predict(pred_nf, rf1, na.action=na.exclude, 
-              ext=ext, 'Products/RandomForest2009.tif', overwrite=TRUE)
+              ext=ext, 'Products/RandomForest2009.tif', 
+              overwrite=TRUE) %>% projectRaster(crs=p)
 pr
 pr[pr < 0.5] <- NA
 
@@ -301,7 +299,9 @@ points(backg_train, pch='-', cex=0.25)
 
 ################# Prediction using data of 2019
 # To begin with, it is necessary to load the data of the year 2019
-bathymetry_2019 <- raster('Raster_data_PTT/bathymetry.tif')
+bathymetry_2019 <- raster('Raster_data_PTT/bathymetry.tif') %>% 
+  projectRaster(crs=p)
+
 names(bathymetry_2019) <- c('bathymetry_2019')
 
 march_2019 <- list.files('Raster_data_2019',
@@ -317,55 +317,57 @@ may_2019 <- list.files('Raster_data_2019',
                        pattern = "May_2019.tif$")
 
 ############### Data preparation
-march_2019 <- stack(march_2019,bathymetry_2019)
-march_2019 <- projectRaster(march_2019, crs=p)
+march_2019 <- stack(march_2019,bathymetry_2019) %>% projectRaster(crs=p)
 
-april_2019 <- stack(april_2019,bathymetry_2019)
-april_2019 <- projectRaster(april_2019, crs=p)
+april_2019 <- stack(april_2019,bathymetry_2019) %>% projectRaster(crs=p)
 
-may_2019 <- stack(may_2019,bathymetry_2019)
-may_2019 <- projectRaster(may_2019, crs=p)
-
-# Make the projection of the Bathymetry same as the others
-bathymetry_2019 <- projectRaster(bathymetry_2019, crs=p)
+may_2019 <- stack(may_2019,bathymetry_2019) %>% projectRaster(crs=p)
 
 ### Mean of three months data
 
-Chlorophyll.a_2019 <- stack(march_2019[[1]], april_2019[[1]], may_2019[[1]])
-Chlorophyll.a_2019 <- calc(Chlorophyll.a_2019, fun = mean)
+Chlorophyll.a_2019 <- stack(march_2019[[1]], april_2019[[1]], may_2019[[1]]) %>% 
+  calc(fun = mean) %>% 
+  na.omit()
 
-Elevation_2019 <- stack(march_2019[[2]], april_2019[[2]], may_2019[[2]])
-Elevation_2019 <- calc(Elevation_2019, fun = mean)
+Elevation_2019 <- stack(march_2019[[2]], april_2019[[2]], may_2019[[2]]) %>% 
+  calc(fun = mean) %>% 
+  na.omit()
 
-Salinity_2019 <- stack(march_2019[[3]], april_2019[[3]], may_2019[[3]])
-Salinity_2019 <- calc(Salinity_2019, fun = mean)
+Salinity_2019 <- stack(march_2019[[3]], april_2019[[3]], may_2019[[3]]) %>% 
+  calc(fun = mean) %>% 
+  na.omit()
 
-Sea_Surface_2019 <- stack(march_2019[[4]], april_2019[[4]], may_2019[[4]])
-Sea_Surface_2019 <- calc(Sea_Surface_2019, fun = mean)
+Sea_Surface_2019 <- stack(march_2019[[4]], april_2019[[4]], may_2019[[4]]) %>% 
+  calc(fun = mean) %>% 
+  na.omit()
 
-U0_2019 <- stack(march_2019[[5]], april_2019[[5]], may_2019[[5]])
-U0_2019 <- calc(U0_2019, fun = mean)
+U0_2019 <- stack(march_2019[[5]], april_2019[[5]], may_2019[[5]]) %>% 
+  calc(fun = mean) %>% 
+  na.omit()
 
-V0_2019 <- stack(march_2019[[6]], april_2019[[6]], may_2019[[6]])
-V0_2019 <- calc(V0_2019, fun = mean)
+V0_2019 <- stack(march_2019[[6]], april_2019[[6]], may_2019[[6]]) %>% 
+  calc(fun = mean) %>% 
+  na.omit()
 
 ## Stack mean values
 predictors_2019 <- stack(bathymetry_2019 ,Chlorophyll.a_2019, Elevation_2019, 
-                         Salinity_2019, Sea_Surface_2019, U0_2019, V0_2019)
-predictors_2019 <- projectRaster(predictors_2019, crs=p)
+                         Salinity_2019, Sea_Surface_2019, U0_2019, V0_2019) %>% 
+                        na.omit()
 
-predictors_2019 <- na.omit(predictors_2019)
-
-names(predictors_2019) <- c('bathymetry','Chlorophyll.a','Elevation','Salinity','Sea_Surface','U0','V0')
+names(predictors_2019) <- c('bathymetry','Chlorophyll.a','Elevation',
+                            'Salinity','Sea_Surface','U0','V0')
 
 ############################## Prediction of suitability data in the year 2019
 
 # using MaxEnt
 mx_2019 <- predict(predictors_2019, xm, na.action=na.exclude, 
-                   ext=ext, 'Products/MaxEnt2019.tif', overwrite=TRUE)
+                   ext=ext, 'Products/MaxEnt2019.tif', 
+                   overwrite=TRUE) %>% projectRaster(crs=p)
 
 mx_2019
-mx_2019[mx_2019 < 0.5] <- NA
+mx_2019[mx_2019 < 0.4] <- NA
+
+#mapview(mx_2019)
 
 par(mfrow=c(1,2))
 plot(mx_2019, main='Maxent prediction/ Penguins data 2019')
@@ -378,12 +380,13 @@ points(pres_train, pch='+')
 
 # using Random Forest prediction
 rf_2019 <- predict(predictors_2019, rf1, na.action=na.exclude, 
-                   ext=ext, 'Products/RandomForest2019.tif', overwrite=TRUE)
+                   ext=ext, 'Products/RandomForest2019.tif', 
+                   overwrite=TRUE) %>% projectRaster(crs=p)
 
 rf_2019
-rf_2019[rf_2019 < 0.5] <- NA
+rf_2019[rf_2019 < 0.4] <- NA
 
-mapview(rf_2019)
+#mapview(rf_2019)
 
 par(mfrow=c(1,2))
 plot(rf_2019, main='Random Forest prediction/ Penguins data 2019')
