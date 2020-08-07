@@ -299,8 +299,7 @@ points(backg_train, pch='-', cex=0.25)
 
 ################# Prediction using data of 2019
 # To begin with, it is necessary to load the data of the year 2019
-bathymetry_2019 <- raster('Raster_data_PTT/bathymetry.tif') %>% 
-  projectRaster(crs=p)
+bathymetry_2019 <- raster('Raster_data_PTT/bathymetry.tif')
 
 names(bathymetry_2019) <- c('bathymetry_2019')
 
