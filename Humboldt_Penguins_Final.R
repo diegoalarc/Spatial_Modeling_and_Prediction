@@ -239,14 +239,31 @@ testbackg <- data.frame( extract(pred_nf, backg_test) )
 
 ################## Random Forest
 library(randomForest)
+library(maxnet)
+library(dismo)
+library(rJava)
 
 # Preparing the model
 model <- pa ~ bathymetry + Chlorophyll.a + 
   Elevation + Salinity + Sea_Surface + U0 + V0
 
+# Clean NA data from envtrain
+envtrain <- na.omit(envtrain)
+
 # RandomForest implements Breiman's random forest algorithm
 rf1 <- randomForest(model, data=envtrain, na.action=na.exclude)
 rf1
+
+# Calculation and plot of the Dependence variables used
+imp <- importance(rf1)
+impvar <- rownames(imp)[order(imp[, 1], decreasing=TRUE)]
+op <- par(mfrow=c(2, 4))
+for (i in seq_along(impvar)) {
+  partialPlot(rf1, envtrain, impvar[i], xlab=impvar[i],
+              main=paste("Partial Dependence on", impvar[i]),
+              ylim=c(0, 1))
+}
+par(op)
 
 # Evaluation of test and background data
 erf <- evaluate(testpres, testbackg, rf1)
