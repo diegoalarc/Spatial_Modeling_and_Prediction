@@ -254,6 +254,9 @@ envtrain <- na.omit(envtrain)
 rf1 <- randomForest(model, data=envtrain, na.action=na.exclude)
 rf1
 
+# variable importance
+varImpPlot(rf1, sort=TRUE, scale=TRUE, main= 'Variable Importance')
+
 # Calculation and plot of the Dependence variables used
 imp <- importance(rf1)
 impvar <- rownames(imp)[order(imp[, 1], decreasing=TRUE)]
@@ -264,6 +267,9 @@ for (i in seq_along(impvar)) {
               ylim=c(0, 1))
 }
 par(op)
+
+# Variables used in a random forest
+varUsed(rf1, by.tree=FALSE, count=TRUE)
 
 # Evaluation of test and background data
 erf <- evaluate(testpres, testbackg, rf1)
