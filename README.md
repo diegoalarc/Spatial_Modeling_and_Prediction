@@ -1,6 +1,5 @@
 ---
-# *"Projection of post-moult area utilization by Humboldt Penguins in south-central
-  Chile"*
+# *"Projection of post-moult area utilization by Humboldt Penguins in south-central Chile"*
   
 *author: "Diego Alarcón"*
 ---
