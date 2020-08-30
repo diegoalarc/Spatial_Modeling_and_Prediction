@@ -8,3 +8,5 @@ This is the course project ["Spatial Modeling and Prediction"] (http://eagle-sci
 
 ![Scientific poster of "Projection of post-moult area utilization by Humboldt
 Penguins in south-central Chile"](https://github.com/diegoalarc/Spatial_Modeling_and_Prediction/blob/master/Products/Poster_Humboldt_Penguins_DiegoAlarcon.png?raw=true)
+
+## [Download the Poster by clicking here](https://github.com/diegoalarc/Spatial_Modeling_and_Prediction/blob/master/Products/Poster_Humboldt_Penguins_DiegoAlarcon_compressed.pdf)
