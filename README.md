@@ -1,7 +1,7 @@
 ---
-title: Projection of post-moult area utilization by Humboldt Penguins in south-central
-  Chile
-Autor: Diego Alarcón
+title: "Projection of post-moult area utilization by Humboldt Penguins in south-central
+  Chile"
+author: "Diego Alarcón"
 ---
 
 This is the course project ["Spatial Modeling and Prediction"] (http://eagle-science.org/project/04-geo-met1-spatial-modeling-and-prediction/)
